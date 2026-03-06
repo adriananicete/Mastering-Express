@@ -3,6 +3,9 @@ import express from "express";
 const PORT = process.env.PORT || 8000;
 const app = express();
 
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
 const users = [
   { id: 1, name: "Adrian", email: "anicete.ian14@gmail.com" },
   { id: 2, name: "Roselyn", email: "roselyn@gmail.com" },
@@ -57,28 +60,109 @@ app.get("/api/users/:id", (req, res) => {
   res.status(200).json(user);
 });
 
+// @desc Create new user
+// @route POST /api/users
+app.post("/api/users", (req, res) => {
+  const { name, email } = req.body;
+
+  if( !name?.trim() || !email?.trim()){
+    return res.status(400).json({error: 'Name and email are required'});
+  }
+
+  const findeUser = users.find(user => user.email === email);
+
+  if(findeUser) {
+    return res.status(400).json({error: 'User exists'})
+  }
+
+  const newUser = {
+    id: users[users.length - 1].id + 1,
+    name: name,
+    email: email,
+  };
+
+  users.push(newUser);
+
+  res.status(201).json({status: "New user created successfully",
+    data: {
+      newUser
+    }
+  });
+});
+
+// @desc update user
+// @route PUT /api/users/:id
+app.put("/api/users/:id", (req, res) => {
+  const { body, params: {id} } = req;
+
+  const parsedId = parseInt(id);
+
+  if(isNaN(parsedId)) return res.status(400).json({error: 'It must have an Id'});
+
+  const findUserIndex = users.findIndex(user => user.id === parsedId);
+
+  if(findUserIndex === -1) return res.status(404).json({error: 'Index not found'});
+  users[findUserIndex] = { id: parsedId, ...body};
+
+  res.status(200).json({
+    status: 'Updated Successfully',
+    data: {
+      updated: users[findUserIndex]
+    }
+  })
+});
+
+// @desc partial update user
+// @route PATCH /api/users/:id
+app.patch('/api/users/:id', (req, res) => {
+  const { body, params: { id }} = req;
+
+  const parsedId = parseInt(id);
+
+  if(isNaN(parsedId)) return res.status(400).json({error: 'Bad Request: Not a Number'});
+
+  const findUserIndex = users.findIndex(user => user.id === parsedId);
+
+  if(findUserIndex === -1) return res.status(404).json({error: 'ID not found'});
+
+  users[findUserIndex] = { ...users[findUserIndex], ...body};
+
+  res.status(200).json({
+    status: 'PATCH requested successfully',
+    data: {
+      updatedByPATCH: users[findUserIndex],
+    }
+  })
+})
+
+// @desc delete new user
+// @route DELETE /api/users/:id
+app.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+
+  const parsedId = parseInt(id);
+
+  if(isNaN(id)) return res.status(400).json({error: 'Bad Request: Not a Number'});
+
+  const findUserIndex = users.findIndex( user => user.id === parsedId);
+
+  if(findUserIndex === -1) return res.status(404).json({error: 'Not found'});
+  const deletedUser = users[findUserIndex];
+
+  users.splice(findUserIndex, 1);
+
+  res.status(200).json({
+    status: 'Deleted Successfully',
+    data: {
+      deleted: deletedUser
+    }
+  })
+});
+
 // @desc Get all products
 // @route GET /api/products
 app.get("/api/products", (req, res) => {
   res.status(200).json(products);
-});
-
-// @desc Create new user
-// @route POST /api/users
-app.post("/api/users", (req, res) => {
-  res.status(201).json({ message: "This is a POST request" });
-});
-
-// @desc update new user
-// @route PUT /api/users/:id
-app.put("/api/users", (req, res) => {
-  res.status(200).json({ message: "This is a PUT request" });
-});
-
-// @desc delete new user
-// @route DELETE /api/users/:id
-app.delete("/api/users", (req, res) => {
-  res.status(200).json({ message: "This is a DELETE request" });
 });
 
 app.listen(PORT, () => {
