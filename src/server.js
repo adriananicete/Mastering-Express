@@ -1,5 +1,10 @@
 import express from "express";
-import { loggerMiddleware, loggerPostMiddleware, resolveIndexByUserId } from "./middleware/usersMiddleware.js";
+import { body, matchedData, validationResult } from "express-validator";
+import {
+  loggerMiddleware,
+  loggerPostMiddleware,
+  resolveIndexByUserId,
+} from "./middleware/usersMiddleware.js";
 
 const PORT = process.env.PORT || 8000;
 const app = express();
@@ -21,10 +26,8 @@ const products = [
 ];
 
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello again Adrian");
@@ -33,16 +36,20 @@ app.get("/", (req, res) => {
 // @desc Get all users
 // @route GET /api/users
 app.get("/api/users", (req, res) => {
-    console.log(req.query)
+  console.log(req.query);
 
-    const { query: { filter, value }} = req;
+  const {
+    query: { filter, value },
+  } = req;
 
-    if (filter && value) {
-        const filteredUser = users.filter(user => user[filter].toLowerCase().includes(value.toLowerCase()));
-        return res.json(filteredUser)
-    } else {
-        return res.json(users)   
-    }
+  if (filter && value) {
+    const filteredUser = users.filter((user) =>
+      user[filter].toLowerCase().includes(value.toLowerCase()),
+    );
+    return res.json(filteredUser);
+  } else {
+    return res.json(users);
+  }
 });
 
 // @desc Get single user
@@ -66,79 +73,98 @@ app.get("/api/users/:id", (req, res) => {
 
 // @desc Create new user
 // @route POST /api/users
-app.post("/api/users",loggerPostMiddleware, (req, res) => {
-  const { name, email } = req.body;
+app.post(
+  "/api/users",
+  [body("name")
+    .notEmpty()
+    .withMessage("Name cannot be empty")
+    .isLength({ min: 2 })
+    .withMessage("Characters length must be atleast 2")
+    .isString()
+    .withMessage("Name must a string"),
+    body('email').notEmpty().withMessage('You must have an email')
+  ],
+  (req, res) => {
+    const result = validationResult(req);
+    console.log(result);
 
-  if( !name?.trim() || !email?.trim()){
-    return res.status(400).json({error: 'Name and email are required'});
-  }
+    if(!result.isEmpty()) return res.status(400).json({ error: result.array().map(err => err.msg)});
 
-  const findeUser = users.find(user => user.email === email);
+    const body = matchedData(req);
+    console.log(body);
+    const { name, email } = body;
 
-  if(findeUser) {
-    return res.status(400).json({error: 'User exists'})
-  }
-
-  const newUser = {
-    id: users[users.length - 1].id + 1,
-    name: name,
-    email: email,
-  };
-
-  users.push(newUser);
-
-  res.status(201).json({status: "New user created successfully",
-    data: {
-      newUser
+    if (!name?.trim() || !email?.trim()) {
+      return res.status(400).json({ error: "Name and email are required" });
     }
-  });
-});
+
+    const findeUser = users.find((user) => user.email === email);
+
+    if (findeUser) {
+      return res.status(400).json({ error: "User exists" });
+    }
+
+    const newUser = {
+      id: users[users.length - 1].id + 1,
+      name: name,
+      email: email,
+    };
+
+    users.push(newUser);
+
+    res.status(201).json({
+      status: "New user created successfully",
+      data: {
+        newUser,
+      },
+    });
+  },
+);
 
 // @desc update user
 // @route PUT /api/users/:id
-app.put("/api/users/:id", resolveIndexByUserId,(req, res) => {
+app.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { body, findUserIndex } = req;
 
-  
-  users[findUserIndex] = { id: users[findUserIndex].id, ...body};
+  users[findUserIndex] = { id: users[findUserIndex].id, ...body };
 
   res.status(200).json({
-    status: 'Updated Successfully',
+    status: "Updated Successfully",
     data: {
-      updated: users[findUserIndex]
-    }
-  })
+      updated: users[findUserIndex],
+    },
+  });
 });
 
 // @desc partial update user
 // @route PATCH /api/users/:id
-app.patch('/api/users/:id', resolveIndexByUserId, (req, res) => {
-  const { body, findUserIndex} = req;
+app.patch("/api/users/:id", resolveIndexByUserId, (req, res) => {
+  const { body, findUserIndex } = req;
 
-  users[findUserIndex] = { ...users[findUserIndex], ...body};
+  users[findUserIndex] = { ...users[findUserIndex], ...body };
 
   res.status(200).json({
-    status: 'PATCH requested successfully',
+    status: "PATCH requested successfully",
     data: {
       updatedByPATCH: users[findUserIndex],
-    }
-  })
-})
+    },
+  });
+});
 
 // @desc delete new user
 // @route DELETE /api/users/:id
-app.delete("/api/users/:id",resolveIndexByUserId, (req, res) => {
+app.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { findUserIndex } = req;
   const deletedUser = users[findUserIndex];
 
   users.splice(findUserIndex, 1);
 
   res.status(200).json({
-    status: 'Deleted Successfully',
+    status: "Deleted Successfully",
     data: {
-      deleted: deletedUser
-    }
-  })
+      deleted: deletedUser,
+    },
+  });
 });
 
 // @desc Get all products
