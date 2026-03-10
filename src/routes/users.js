@@ -9,8 +9,8 @@ const router = express.Router();
 // @desc Get all users
 // @route GET /api/users
 router.get("/", (req, res) => {
-  console.log(req.query);
-
+  console.log(req.session);
+  console.log(req.session.id);
   const {
     query: { filter, value },
   } = req;
