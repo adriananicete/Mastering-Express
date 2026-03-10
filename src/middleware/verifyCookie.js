@@ -2,7 +2,7 @@ export const verifyCookie = (req, res, next) => {
     console.log(req.signedCookies);
     console.log(req.signedCookies.hello);
 
-    if(req.signedCookies.hello && req.signedCookies.hello === 'cookie') {
+    if(req.session && req.session.visited) {
         return next();
     }
 
