@@ -1,6 +1,6 @@
-import express from 'express';
-import { Router } from 'express';
-import { products } from '../utils/data.js';
+import express from "express";
+import { Router } from "express";
+import { products } from "../utils/data.js";
 
 const router = Router();
 
