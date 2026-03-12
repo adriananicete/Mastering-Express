@@ -5,11 +5,14 @@ import cookieParser from 'cookie-parser';
 import session from "express-session";
 import { users } from "./utils/data.js";
 import passport from "passport";
+import mongoose from "mongoose";
 import './strategies/local-strategy.js';
 
 
 const PORT = process.env.PORT || 8000;
 const app = express();
+
+mongoose.connect('mongodb://localhost/express_tutorial').then(() => console.log('Connected to Database')).catch(err => console.error('Unable to connect to database',err));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,7 +23,7 @@ app.use(session({
   saveUninitialized: false,
   resave: false,
   cookie: {
-    maxAge: 60000
+    maxAge: 60000 * 60
   }
 }));
 app.use(passport.initialize());
@@ -35,8 +38,7 @@ app.get("/", (req, res) => {
 });
 
 app.post('/api/auth', passport.authenticate('local'), (req, res) => {
-  console.log('/api/auth', req.user)
-  res.sendStatus(200)
+  res.status(200).json(req.user)
 
 });
 

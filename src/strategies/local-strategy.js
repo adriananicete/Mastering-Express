@@ -1,17 +1,18 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
 import { users } from "../utils/data.js";
+import { User } from "../mongoose/schemas/users.js";
 
 passport.serializeUser((user, done) => {
     console.log('Inside Serialize user',user);
     done(null, user.id)
 });
 
-passport.deserializeUser((id, done) => {
+passport.deserializeUser(async (id, done) => {
     console.log('Inside Deserializer');
     console.log(`Deserializing User ID: ${id}`);
     try {
-        const findeUser = users.find(user => user.id === id);
+        const findeUser = await User.findById(id)
         if (!findeUser) throw new Error('User not found!');
         done(null, findeUser);
     } catch (error) {
@@ -20,16 +21,14 @@ passport.deserializeUser((id, done) => {
 })
 
 export default passport.use(
-    new Strategy({ usernameField: 'email' }, (email, password, done) => {
+    new Strategy({ usernameField: 'email' }, async (email, password, done) => {
         console.log(`Email: ${email}`);
         console.log(`Password: ${password}`);
         try {
-            const findeUser = users.find(user => user.email === email);
-            if(!findeUser) throw new Error('User not found');
-            if(findeUser.password !== password) throw new Error('Invalid Credentials');
-
-            done(null, findeUser);
-
+            const findeUser = await User.findOne({email});
+            if (!findeUser) throw new Error('User not Found');
+            if (findeUser.password !== password) throw new Error('Wrong Password');
+            done(null, findeUser)
         } catch (error) {
             done(error, null);
         }
