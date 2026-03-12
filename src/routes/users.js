@@ -4,6 +4,7 @@ import { users } from '../utils/data.js';
 import { resolveIndexByUserId } from '../middleware/usersMiddleware.js';
 import { User } from '../mongoose/schemas/users.js';
 import { createUserValidationSchema } from '../utils/validationSchema.js';
+import { hashPassword } from '../utils/helpers.js';
 
 const router = express.Router();
 
@@ -55,6 +56,9 @@ router.post(
     if(!result.isEmpty()) return res.send(result.array());
 
     const data = matchedData(req)
+    console.log('Before hash',data);
+    data.password = await hashPassword(data.password);
+    console.log('After hash',data);
     const newUser = new User(data);
 
     try {
