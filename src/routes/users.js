@@ -1,7 +1,9 @@
 import express from 'express';
-import { body, matchedData, validationResult } from 'express-validator';
+import { body, checkSchema, matchedData, validationResult } from 'express-validator';
 import { users } from '../utils/data.js';
 import { resolveIndexByUserId } from '../middleware/usersMiddleware.js';
+import { User } from '../mongoose/schemas/users.js';
+import { createUserValidationSchema } from '../utils/validationSchema.js';
 
 const router = express.Router();
 
@@ -47,50 +49,26 @@ router.get("/:id", (req, res) => {
 // @desc Create new user
 // @route POST /api/users
 router.post(
-  "/",
-  [body("name")
-    .notEmpty()
-    .withMessage("Name cannot be empty")
-    .isLength({ min: 2 })
-    .withMessage("Characters length must be atleast 2")
-    .isString()
-    .withMessage("Name must a string"),
-    body('email').notEmpty().withMessage('You must have an email')
-  ],
-  (req, res) => {
+  "/", checkSchema(createUserValidationSchema),
+  async (req, res) => {
     const result = validationResult(req);
-    console.log(result);
+    if(!result.isEmpty()) return res.send(result.array());
 
-    if(!result.isEmpty()) return res.status(400).json({ error: result.array().map(err => err.msg)});
+    const data = matchedData(req)
+    const newUser = new User(data);
 
-    const body = matchedData(req);
-    console.log(body);
-    const { name, email } = body;
-
-    if (!name?.trim() || !email?.trim()) {
-      return res.status(400).json({ error: "Name and email are required" });
+    try {
+      const savedUser = await newUser.save();
+      return res.status(201).json({
+        status: 'Successfull',
+        data: {
+          savedUser
+        }
+      })
+    } catch (error) {
+      console.error(error);
+      return res.sendStatus(400);
     }
-
-    const findeUser = users.find((user) => user.email === email);
-
-    if (findeUser) {
-      return res.status(400).json({ error: "User exists" });
-    }
-
-    const newUser = {
-      id: users[users.length - 1].id + 1,
-      name: name,
-      email: email,
-    };
-
-    users.push(newUser);
-
-    res.status(201).json({
-      status: "New user created successfully",
-      data: {
-        newUser,
-      },
-    });
   },
 );
 
