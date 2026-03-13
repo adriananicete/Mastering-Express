@@ -7,7 +7,8 @@ import { users } from "./utils/data.js";
 import passport from "passport";
 import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
-import './strategies/local-strategy.js';
+// import './strategies/local-strategy.js';
+import './strategies/discord-strategy.js'
 
 
 const PORT = process.env.PORT || 8000;
@@ -63,6 +64,10 @@ app.post('/api/auth/logout', (req, res) => {
   })
 })
 
+app.get('/api/auth/discord', passport.authenticate('discord'));
+app.get('/api/auth/discord/redirect', passport.authenticate('discord'), (req, res) => {
+   res.sendStatus(200);
+})
 // app.post('/api/auth', (req, res) => {
 //   const { email, password } = req.body;
 
