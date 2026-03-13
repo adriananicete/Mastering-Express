@@ -6,6 +6,7 @@ import session from "express-session";
 import { users } from "./utils/data.js";
 import passport from "passport";
 import mongoose from "mongoose";
+import MongoStore from "connect-mongo";
 import './strategies/local-strategy.js';
 
 
@@ -20,11 +21,14 @@ app.use(loggerMiddleware);
 app.use(cookieParser('helloWorld'));
 app.use(session({
   secret: 'ian the dev',
-  saveUninitialized: false,
+  saveUninitialized: true,
   resave: false,
   cookie: {
     maxAge: 60000 * 60
-  }
+  },
+  store: MongoStore.create({
+    client: mongoose.connection.getClient()
+  })
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -45,7 +49,8 @@ app.post('/api/auth', passport.authenticate('local'), (req, res) => {
 app.get('/api/auth/status', (req, res) => {
   console.log('Inside /auth/status endpoint')
   console.log(req.user);
-  console.log(req.session)
+  console.log(req.session);
+  console.log(req.session.id);
   req.user ? res.status(200).json(req.user) : res.status(401).json({error: 'Unauthorized: User logout'})
 
 });
